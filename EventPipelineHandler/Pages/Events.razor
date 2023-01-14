@@ -1,0 +1,139 @@
+﻿@using EventPipelineHandler.Data
+@using EventPipelineHandler.EventManager;
+@using EventPipelineHandler.Services;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using System.Text.Json;
+@using Microsoft.EntityFrameworkCore;
+@using Microsoft.AspNetCore.SignalR.Client
+@page "/events"
+@inject ApplicationDbContext DbContext
+@inject EventService EventService
+@inject NavigationManager Navigation
+@inject BackgroundTaskQueue BackgroundTaskQueue
+@implements IAsyncDisposable
+
+<PageTitle>Index</PageTitle>
+
+<h1>View event actions</h1>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">
+                
+            </th>
+            <th scope="col">Name</th>
+            <th scope="col">EventActionType</th>
+            <th scope="col">Created At</th>
+            <th scope="col">Created By</th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var eventAction in EventActions)
+        {
+            <tr>
+                <th scope="row">
+                     @if (eventAction.EventActionState == EventActionState.InProgress)
+                {
+                    <i class="fas fa-spinner"></i>
+                }
+                else if (eventAction.EventActionState == EventActionState.Failed)
+                {
+                    <i class="fas fa-times"></i>
+                }
+                else if (eventAction.EventActionState == EventActionState.Done)
+                {
+                    <i class="fas fa-check"></i>
+                }
+                else if (eventAction.EventActionState == EventActionState.Pending)
+                {
+                    <i class="fas fa-hourglass-start"></i>
+                }
+                </th>
+                <td>@eventAction.Name</td>
+                <td>@eventAction.EventActionType</td>
+                <td>@eventAction.CreatedAt</td>
+                <td>@eventAction.CreatedBy</td>
+                <td>
+                    <button class="btn btn-primary" disabled=@IsRerunDisabled(eventAction.EventActionState) @onclick="() => RerunEvent(eventAction)">Rerun event</button>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<style>
+    .table {
+        color: white !important;
+    }
+
+    .fa-spinner {
+      animation: spin 2s linear infinite;
+    }
+
+    .fa-times {
+      color: #ff0000;
+    }
+
+    .fa-check {
+      color: #00ff00;
+    }
+
+    @@keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+</style>
+
+@code 
+{
+    public List<EventAction> EventActions { get; set; } = new List<EventAction>();
+
+    public List<Customer> Customers { get; set; } = new List<Customer>();
+
+    private HubConnection? hubConnection;
+    private List<string> messages = new List<string>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        EventActions = await EventService.GetEventActionsAsync();
+        Customers = await DbContext.Customers.AsNoTracking().ToListAsync();
+
+        hubConnection = new HubConnectionBuilder()
+           .WithUrl(Navigation.ToAbsoluteUri("/eventActionHub"))
+           .Build();
+
+        hubConnection.On<Guid, EventActionState>("EventActionStateUpdated", (eventId, eventActionState) =>
+        {
+            var eventAction = EventActions.FirstOrDefault(x => x.Id == eventId);
+            
+            if (eventAction != null)
+            {
+                eventAction.EventActionState = eventActionState;
+                InvokeAsync(StateHasChanged);
+            }
+        });
+
+        await hubConnection.StartAsync();
+    }
+
+    public bool IsConnected =>
+        hubConnection?.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        if (hubConnection is not null)
+        {
+            await hubConnection.DisposeAsync();
+        }
+    }
+
+    public void RerunEvent(EventAction eventAction)
+    {
+        BackgroundTaskQueue.QueueEvent(eventAction);
+    }
+
+    private bool IsRerunDisabled(EventActionState state) => state != EventActionState.Failed;
+}

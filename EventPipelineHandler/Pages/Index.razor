@@ -1,0 +1,76 @@
+﻿@using EventPipelineHandler.Data;
+@using EventPipelineHandler.EventManager;
+@using EventPipelineHandler.Services;
+@using Microsoft.AspNetCore.Components.Server.ProtectedBrowserStorage
+@using System.Text.Json;
+@using EventPipelineHandler.Events.CustomEvents
+@page "/"
+@inject IEventRunner EventRunner
+@inject BackgroundTaskQueue BackgroundTaskQueue
+@inject ApplicationDbContext DbContext
+
+<PageTitle>Index</PageTitle>
+
+<h1>Hello, world!</h1>
+
+Welcome to your new app.
+
+<button @onclick="ExecuteEvent"></button>
+
+<SurveyPrompt Title="How is Blazor working for you?" />
+
+@code 
+{
+    protected override async Task OnInitializedAsync()
+    {
+    }
+
+    public async Task ExecuteEvent()
+    {
+        var createCustomerInDbId = Guid.NewGuid();
+
+        var customerEventAction = new EventAction
+            {
+                CreatedAt = DateTime.Now,
+                Name = "Create customer in DB",
+                EventActionType = EventActionType.CreateCustomerInDb,
+                CreatedBy = "System",
+                Data = JsonSerializer.Serialize(new CreateCustomerInDbData
+                {
+                    CustomerEmail = "test@email.dk",
+                    CustomerName = "Test Customer",
+                    CustomerPhone = "12345678",
+
+                }),
+                Id = createCustomerInDbId,
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = "System"
+            };
+
+        var sharepointEventAction = new EventAction
+            {
+                Id = Guid.NewGuid(),
+                CreatedAt = DateTime.Now,
+                Name = "Create customer in SharePoint",
+                EventActionType = EventActionType.TransferToSharepoint,
+                CreatedBy = "System",
+                Data = JsonSerializer.Serialize(new TransferToSharepointEventActionData
+                {
+                    CustomerAddress = "Test Address",
+                    CustomerEmail = "s",
+                    CustomerName = "Test Customer",
+                    CustomerPhone = "1234"
+                }),
+                UpdatedAt = DateTime.Now,
+                UpdatedBy = "System",
+                ParentEventActionId = createCustomerInDbId
+            };
+
+        DbContext.EventActions.Add(customerEventAction);
+        DbContext.EventActions.Add(sharepointEventAction);
+        
+        await DbContext.SaveChangesAsync();
+
+        BackgroundTaskQueue.QueueEvent(customerEventAction);
+    }
+}
