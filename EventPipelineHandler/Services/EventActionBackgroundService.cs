@@ -34,10 +34,10 @@ public class EventActionBackgroundService : BackgroundService
                     using var scope = _serviceScopeFactory.CreateScope();
 
                     var eventRunner = scope.ServiceProvider.GetRequiredService<IEventRunner>();
-                    var result = await eventRunner.ExecuteEventAction(eventAction);
+                    var childEvents = await eventRunner.ExecuteEventAction(eventAction);
 
-                    foreach (var action in result)
-                        _backgroundTaskQueue.QueueEvent(action);
+                    foreach (var eventChild in childEvents)
+                        _backgroundTaskQueue.QueueEvent(eventChild);
 
                     _semaphore.Release();
                 });
