@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "8mVUa0dmkiPI9janmUNZWN4e7LMCZdPW2cg78uFhsAr/UyiOQ8E5w4FMnUU5tRlxvhr69Nt6Vu5GAP3r6Qwqgg==",
+  "dgSpecHash": "xwzF+FqMZVUg786DE60IGERlWOidm/5dBpohc4xvJ0OWeAxPe/ci8sfVEyCtPxsfnnc98dV04xGOoXZ0JHZQoQ==",
   "success": true,
-  "projectFilePath": "C:\\Users\\Patrick Brix\\source\\repos\\BlazorApp1\\EventPipelineHandler\\EventPipelineHandler.csproj",
+  "projectFilePath": "C:\\Users\\Patrick Brix\\source\\repos\\EventPipelineHandler\\EventPipelineHandler\\EventPipelineHandler.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Patrick Brix\\.nuget\\packages\\entityframework\\6.4.4\\entityframework.6.4.4.nupkg.sha512",
     "C:\\Users\\Patrick Brix\\.nuget\\packages\\microsoft.aspnetcore.connections.abstractions\\7.0.2\\microsoft.aspnetcore.connections.abstractions.7.0.2.nupkg.sha512",

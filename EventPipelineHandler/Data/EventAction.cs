@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using EventPipelineHandler.Data;
+using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EventPipelineHandler.Data
 {
@@ -12,17 +14,26 @@ namespace EventPipelineHandler.Data
         public string? Data { get; set; } = string.Empty;
         public DateTime LastExecutedAt { get; set; }
         public DateTime CompletedAt { get; set; }
-        public Guid? ParentEventActionId { get; set; }
-        public EventAction? ParentEventAction { get; set; }
-        public List<EventAction> ChildEventActions { get; set; } = new List<EventAction>();
 
-        // setup entity framework foreign key .HasOne
+        [NotMapped]
+        public int Level { get; set; }
+        [NotMapped]
+        public char? TreeLetter { get; set; }
+
+
+        /// <summary>
+        /// A child event will run once all of its parent event actions have completed successfully
+        /// </summary>
+        public ICollection<EventAction> ParentEventActions { get; set; } = new List<EventAction>();
+        public ICollection<EventAction> ChildEventActions { get; set; } = new List<EventAction>();
+
         public void OnModelCreating(ModelBuilder modelBuilder)
         {
+            // configure many to many
             modelBuilder.Entity<EventAction>()
-                .HasOne(x => x.ParentEventAction)
-                .WithMany(x => x.ChildEventActions)
-                .HasForeignKey(x => x.ParentEventActionId);
+                .HasMany(e => e.ParentEventActions)
+                .WithMany(e => e.ChildEventActions)
+                .UsingEntity(j => j.ToTable("EventActionRelationships"));
         }
 
         public void AddLineToExecutionLog(string line)

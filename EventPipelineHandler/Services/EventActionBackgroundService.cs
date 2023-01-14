@@ -10,10 +10,12 @@ public class EventActionBackgroundService : BackgroundService
     private readonly SemaphoreSlim _semaphore;
 
     public EventActionBackgroundService(IServiceScopeFactory serviceScopeFactory,
-        BackgroundTaskQueue backgroundTaskQueue, int maxConcurrentTasks = 20)
+        BackgroundTaskQueue backgroundTaskQueue)
     {
         _serviceScopeFactory = serviceScopeFactory;
         _backgroundTaskQueue = backgroundTaskQueue;
+        
+        var maxConcurrentTasks = 20;
         _semaphore = new SemaphoreSlim(maxConcurrentTasks);
     }
 

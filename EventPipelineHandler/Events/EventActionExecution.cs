@@ -47,31 +47,22 @@ namespace EventPipelineHandler.EventManager
 
             var updatedEvent = await RunEvent(eventAction);
 
-            eventAction.UpdatedAt = DateTime.Now;
-            eventAction.UpdatedBy = "System";
-            eventAction.CompletedAt = DateTime.Now;
+            updatedEvent.UpdatedAt = DateTime.Now;
+            updatedEvent.UpdatedBy = "System";
+            updatedEvent.CompletedAt = DateTime.Now;
             await _applicationDbContext.SaveChangesAsync();
 
-            await _eventActionHub.Clients.All.SendAsync(HubChannels.EventActionStateUpdated, eventAction.Id, eventAction.EventActionState);
+            await _eventActionHub.Clients.All.SendAsync(HubChannels.EventActionStateUpdated, updatedEvent.Id, updatedEvent.EventActionState);
 
             if (updatedEvent.EventActionState == EventActionState.Failed)
                 return new();
+            
+            var nextEventActions = await _applicationDbContext.EventActions
+                .Where(x => x.ParentEventActions.Contains(updatedEvent) && 
+                    x.ParentEventActions.All(y => y.EventActionState == EventActionState.Done))
+                .ToListAsync();
 
-            var unfinishedParallelEventActions = await _applicationDbContext.EventActions
-                   .Where(x => x.ParentEventActionId != null && x.ParentEventActionId == updatedEvent.ParentEventActionId
-                       && x.EventActionState != EventActionState.Done && x.Id != updatedEvent.Id)
-                   .ToListAsync();
-
-            if (!unfinishedParallelEventActions.Any())
-            {
-                var nextEventActions = await _applicationDbContext.EventActions
-                    .Where(x => x.ParentEventActionId == updatedEvent.Id)
-                    .ToListAsync();
-
-                return nextEventActions;
-            }
-
-            return new();
+            return nextEventActions;
         }
     }
 }

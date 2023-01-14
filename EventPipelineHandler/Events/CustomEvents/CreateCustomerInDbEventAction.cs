@@ -33,9 +33,9 @@ namespace EventPipelineHandler.Events.CustomEvents
 
                 // Simulate an API call
                 await Task.Delay(5000);
-
-                if (new Random().Next(0, 2) == 0)
-                    throw new Exception("Something went wrong");
+                
+                if (new Random().Next(1, 4) == 1)
+                    throw new Exception("Failed to create customer in database");
 
                 var customer = new Customer
                 {

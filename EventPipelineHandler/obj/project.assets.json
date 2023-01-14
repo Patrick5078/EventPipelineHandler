@@ -2620,11 +2620,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\Users\\Patrick Brix\\source\\repos\\BlazorApp1\\EventPipelineHandler\\EventPipelineHandler.csproj",
+      "projectUniqueName": "C:\\Users\\Patrick Brix\\source\\repos\\EventPipelineHandler\\EventPipelineHandler\\EventPipelineHandler.csproj",
       "projectName": "EventPipelineHandler",
-      "projectPath": "C:\\Users\\Patrick Brix\\source\\repos\\BlazorApp1\\EventPipelineHandler\\EventPipelineHandler.csproj",
+      "projectPath": "C:\\Users\\Patrick Brix\\source\\repos\\EventPipelineHandler\\EventPipelineHandler\\EventPipelineHandler.csproj",
       "packagesPath": "C:\\Users\\Patrick Brix\\.nuget\\packages\\",
-      "outputPath": "C:\\Users\\Patrick Brix\\source\\repos\\BlazorApp1\\EventPipelineHandler\\obj\\",
+      "outputPath": "C:\\Users\\Patrick Brix\\source\\repos\\EventPipelineHandler\\EventPipelineHandler\\obj\\",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "C:\\Users\\Patrick Brix\\AppData\\Roaming\\NuGet\\NuGet.Config",
