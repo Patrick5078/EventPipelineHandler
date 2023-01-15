@@ -1,0 +1,23 @@
+﻿@using EventPipelineHandler.Data;
+
+@if (State == EventActionState.InProgress)
+{
+        <i class="fas fa-spinner"></i>
+}
+else if (State == EventActionState.Failed)
+{
+        <i class="fas fa-times"></i>
+}
+else if (State == EventActionState.Done)
+{
+        <i class="fas fa-check"></i>
+}
+else if (State == EventActionState.Pending)
+{
+        <i class="fas fa-hourglass-start"></i>
+}
+
+@code {
+    [Parameter]
+    public EventActionState State { get; set; }
+}

@@ -5,6 +5,7 @@
 @using System.Text.Json;
 @using Microsoft.EntityFrameworkCore;
 @using Microsoft.AspNetCore.SignalR.Client
+@using System.Text;
 @page "/"
 @inject ApplicationDbContext DbContext
 @inject EventService EventService
@@ -17,51 +18,35 @@
 <h1>View event actions</h1>
 <button class="btn btn-primary" @onclick="() => GenerateEvents()">Generate events</button>
 
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">
-            </th>
-            <th scope="col">Name</th>
-            <th>Pipeline</th>
-            <th scope="col">EventActionType</th>
-            <th scope="col">Created At</th>
-            <th scope="col"></th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var eventAction in EventActions)
-        {
-            <tr>
-                <td scope="row">
-                     @if (eventAction.EventActionState == EventActionState.InProgress)
-                {
-                    <i class="fas fa-spinner"></i>
-                }
-                else if (eventAction.EventActionState == EventActionState.Failed)
-                {
-                    <i class="fas fa-times"></i>
-                }
-                else if (eventAction.EventActionState == EventActionState.Done)
-                {
-                    <i class="fas fa-check"></i>
-                }
-                else if (eventAction.EventActionState == EventActionState.Pending)
-                {
-                    <i class="fas fa-hourglass-start"></i>
-                }
-                </td>
-                <td>@eventAction.Name</td>
-                <td>@eventAction.TreeLetter | Step @eventAction.Level</td>
-                <td>@eventAction.EventActionType</td>
-                <td>@eventAction.CreatedAt</td>
-                <td>
-                    <button class="btn btn-primary" disabled=@IsRerunDisabled(eventAction.EventActionState) @onclick="() => RerunEvent(eventAction)">Rerun event</button>
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+@foreach (var chain in EventActionChains)
+{
+    <h2 class="mb-3">@chain.Name</h2>
+    <div class="row align-center">
+            @foreach (var stepGroup in chain.EventActions.GroupBy(e => e.Step).OrderBy(e => e.Min(e => e.Step)).Select(e => e))
+            {
+                <div class="col-sm">
+                <p>Step @stepGroup.First().Step</p>
+                    @foreach (var action in stepGroup)
+                    {
+                        <div class="card bg-dark mb-3 @GetBorderClassColor(action.EventActionState)" style="width: 18rem;">
+                            <div class="card-body">
+                                <div class="space-between">
+                                    <h5 class="card-title">@action.Name</h5>
+                                    <div>
+                                        <EventActionIcon State="action.EventActionState" />
+                                    </div>
+                                </div> 
+                                <h6 class="card-subtitle mb-2 text-muted">@action.EventActionType</h6>
+                                <p class="card-text">@action.Description</p>
+                                <button class="btn btn-primary mt-2" disabled=@IsRerunDisabled(action.EventActionState) @onclick="() => RerunEvent(action)">Rerun event</button>
+                                <!-- <a href="#" class="card-link">Another link</a> -->
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+    </div>
+}
 
 <style>
     .table {
@@ -89,15 +74,24 @@
         vertical-align: middle;
     }
 
+    .space-between {
+        display: flex;
+        justify-content: space-between;
+    }
+
+    .align-center {
+        align-items: center;
+    }
+
 </style>
 
 @code 
 {
-    public List<EventAction> EventActions { get; set; } = new List<EventAction>();
-
     public List<Customer> Customers { get; set; } = new List<Customer>();
-
     private HubConnection? HubConnection;
+
+    private List<EventActionChain> EventActionChains = new List<EventActionChain>();
+
 
     protected override async Task OnInitializedAsync()
     {
@@ -108,7 +102,7 @@
 
         HubConnection.On<Guid, EventActionState>("EventActionStateUpdated", (eventId, eventActionState) =>
         {
-            var eventAction = EventActions.FirstOrDefault(x => x.Id == eventId);
+            var eventAction = EventActionChains.SelectMany(e => e.EventActions).FirstOrDefault(e => e.Id == eventId);
 
             if (eventAction != null)
             {
@@ -122,8 +116,10 @@
 
     public async Task GetEvents()
     {
-        EventActions = await EventService.GetEventActionsAsync();
+        EventActionChains = await EventService.GetEventActionChainsAsync();
+
         Customers = await DbContext.Customers.AsNoTracking().ToListAsync();
+
     }
 
     public bool IsConnected =>
@@ -139,7 +135,7 @@
 
     public void RerunEvent(EventAction eventAction)
     {
-        BackgroundTaskQueue.QueueEvent(eventAction);
+        BackgroundTaskQueue.QueueEventAction(eventAction);
         eventAction.EventActionState = EventActionState.InProgress;
     }
 
@@ -150,4 +146,14 @@
         await EventService.CreateTestEvents();
         await GetEvents();
     }
+
+    private string GetBorderClassColor(EventActionState eventActionState) =>
+        eventActionState switch
+        {
+            EventActionState.Failed => "border border-danger",
+            EventActionState.Pending => "border border-dark",
+            EventActionState.InProgress => "border border-primary",
+            EventActionState.Done => "border border-success",
+            _ => throw new Exception()
+        };
 }

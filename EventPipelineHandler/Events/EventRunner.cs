@@ -11,14 +11,12 @@ namespace EventPipelineHandler.EventManager
     {
         private readonly ApplicationDbContext _applicationDbContext;
         private readonly IServiceProvider _serviceProvider;
-        private readonly IHubContext<EventActionHub> _eventActionHub;
         private Dictionary<EventActionType, EventActionExecution> _cachedActionExecutions = new();
 
-        public EventRunner(ApplicationDbContext applicationDbContext, IServiceProvider serviceProvider, IHubContext<EventActionHub> eventActionHub)
+        public EventRunner(ApplicationDbContext applicationDbContext, IServiceProvider serviceProvider)
         {
             _applicationDbContext = applicationDbContext;
             _serviceProvider = serviceProvider;
-            _eventActionHub = eventActionHub;
         }
 
         public async Task<List<EventAction>> ExecuteEventAction(EventAction eventAction)
@@ -29,8 +27,6 @@ namespace EventPipelineHandler.EventManager
                 throw new Exception();
 
             var eventActionExecution = GetEventActionExecution(eventAction.EventActionType);
-            await _eventActionHub.Clients.All.SendAsync(HubChannels.EventActionStateUpdated, eventAction.Id, eventAction.EventActionState);
-
             return await eventActionExecution.Execute(eventAction);
         }
 

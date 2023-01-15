@@ -32,7 +32,7 @@ namespace EventPipelineHandler.EventManager
         public async Task<List<EventAction>> Execute(EventAction eventAction)
         {
             if (eventAction.EventActionState != EventActionState.Pending && eventAction.EventActionState != EventActionState.Failed)
-                return new();
+                return new List<EventAction>();
 
             eventAction.LastExecutedAt = DateTime.Now;
             eventAction.EventActionState = EventActionState.InProgress;
@@ -55,14 +55,18 @@ namespace EventPipelineHandler.EventManager
             await _eventActionHub.Clients.All.SendAsync(HubChannels.EventActionStateUpdated, updatedEvent.Id, updatedEvent.EventActionState);
 
             if (updatedEvent.EventActionState == EventActionState.Failed)
-                return new();
-            
-            var nextEventActions = await _applicationDbContext.EventActions
-                .Where(x => x.ParentEventActions.Contains(updatedEvent) && 
-                    x.ParentEventActions.All(y => y.EventActionState == EventActionState.Done))
-                .ToListAsync();
+                return new List<EventAction>();
 
-            return nextEventActions;
+            var eventsInChain = await _applicationDbContext.EventActions.Where(e => e.EventActionChainId == updatedEvent.EventActionChainId).ToListAsync();
+
+            if (eventsInChain.Where(e => e.Step == updatedEvent.Step).All(e => e.EventActionState == EventActionState.Done))
+            {
+                var nextEvents = eventsInChain.Where(e => e.Step == updatedEvent.Step + 1).ToList();
+                return nextEvents;
+            }
+
+
+            return new List<EventAction>();
         }
     }
 }

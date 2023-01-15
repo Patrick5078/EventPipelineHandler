@@ -26,7 +26,7 @@ public class EventActionBackgroundService : BackgroundService
         while (!stoppingToken.IsCancellationRequested)
         {
             
-            while (_backgroundTaskQueue.Dequeue(stoppingToken) is EventAction eventAction)
+            while (_backgroundTaskQueue.DequeueEventAction(stoppingToken) is EventAction eventAction)
             {
                 await _semaphore.WaitAsync(stoppingToken);
                 
@@ -37,7 +37,7 @@ public class EventActionBackgroundService : BackgroundService
                     var childEvents = await eventRunner.ExecuteEventAction(eventAction);
 
                     foreach (var eventChild in childEvents)
-                        _backgroundTaskQueue.QueueEvent(eventChild);
+                        _backgroundTaskQueue.QueueEventAction(eventChild);
 
                     _semaphore.Release();
                 });

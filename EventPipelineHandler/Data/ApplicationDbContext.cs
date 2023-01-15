@@ -11,6 +11,7 @@ namespace EventPipelineHandler.Data
 
         public DbSet<Customer> Customers { get; set; }
         public DbSet<EventAction> EventActions { get; set; }
+        public DbSet<EventActionChain> EventActionChains { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
         }

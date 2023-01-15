@@ -1,5 +1,6 @@
 ﻿using EventPipelineHandler.Data;
 using Microsoft.EntityFrameworkCore;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
 namespace EventPipelineHandler.Data
@@ -14,27 +15,14 @@ namespace EventPipelineHandler.Data
         public string? Data { get; set; } = string.Empty;
         public DateTime LastExecutedAt { get; set; }
         public DateTime CompletedAt { get; set; }
-
-        [NotMapped]
-        public int Level { get; set; }
-        [NotMapped]
-        public char? TreeLetter { get; set; }
-
-
+        
         /// <summary>
-        /// A child event will run once all of its parent event actions have completed successfully
+        /// At which step in the chain should the event be executed?
         /// </summary>
-        public ICollection<EventAction> ParentEventActions { get; set; } = new List<EventAction>();
-        public ICollection<EventAction> ChildEventActions { get; set; } = new List<EventAction>();
+        public required int Step { get; set; }
 
-        public void OnModelCreating(ModelBuilder modelBuilder)
-        {
-            // configure many to many
-            modelBuilder.Entity<EventAction>()
-                .HasMany(e => e.ParentEventActions)
-                .WithMany(e => e.ChildEventActions)
-                .UsingEntity(j => j.ToTable("EventActionRelationships"));
-        }
+        public Guid EventActionChainId { get; set; }
+        public EventActionChain EventActionChain { get; set; }
 
         public void AddLineToExecutionLog(string line)
         {

@@ -10,7 +10,21 @@
         private ConcurrentQueue<EventAction> _workItems =
             new ConcurrentQueue<EventAction>();
 
-        public void QueueEvent(EventAction workItem)
+        public void QueueFirstStepsOfEventActionChain(EventActionChain workItem)
+        {
+            if (workItem == null)
+            {
+                throw new ArgumentNullException(nameof(workItem));
+            }
+
+            var lowestStep = workItem.EventActions.Min(e => e.Step);
+            var lowestStepActions = workItem.EventActions.Where(e => e.Step == lowestStep);
+
+            foreach (var eventAction in lowestStepActions)
+                _workItems.Enqueue(eventAction);
+        }
+
+        public void QueueEventAction(EventAction workItem)
         {
             if (workItem == null)
             {
@@ -20,7 +34,7 @@
             _workItems.Enqueue(workItem);
         }
 
-        public EventAction? Dequeue(
+        public EventAction? DequeueEventAction(
             CancellationToken cancellationToken)
         {
             _workItems.TryDequeue(out var workItem);
